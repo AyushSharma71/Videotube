@@ -10,11 +10,16 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "nodemon src/index.js"
+    "start": "nodemon src/index.js"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mongoose": "^9.7.0"
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.7.0",
+    "multer": "^2.2.0"
   }
 }
