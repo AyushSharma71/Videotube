@@ -3,24 +3,24 @@ import User from "../models/user.models.js";
 import bcrypt from "bcrypt";
 import cookieparser from "cookie-parser";
 import jwt from "jsonwebtoken";
-import { uploadImage } from "../utils/cloudinary.js";
-
+import { uploadImage,destroyImage } from "../utils/cloudinary.js";
+import {v2 as cloudinary} from "cloudinary";
 const options = {
     httpOnly: true,
     secure: true,
 }
 
-const generateAccessTokenAndRefreshToken = async function (userid){
+const generateAccessTokenAndRefreshToken = async function (userid) {
     try {
-        const user =await User.findById(userid)
+        const user = await User.findById(userid)
         const refreshtoken = await user.generateRefreshToken();
         const accesstoken = await user.generateAccessToken();
         user.refreshToken = refreshtoken;
-        await user.save({validateBeforeSave:false});
-    
-        return {accesstoken,refreshtoken};
+        await user.save({ validateBeforeSave: false });
+
+        return { accesstoken, refreshtoken };
     } catch (error) {
-        throw new Apierror(error.statuscode,error.message);
+        throw new Apierror(error.statuscode, error.message);
     }
 }
 
@@ -100,8 +100,8 @@ const loginUser = async (req, res) => {
         //     )
         //     userexists.refreshToken = refreshtoken;
         //     await userexists.save({ validateBeforeSave: false });
-            if(decodedpassword){
-                const {accesstoken,refreshtoken} = await generateAccessTokenAndRefreshToken(userexists?._id);
+        if (decodedpassword) {
+            const { accesstoken, refreshtoken } = await generateAccessTokenAndRefreshToken(userexists?._id);
 
             res
                 .cookie("refreshtoken", refreshtoken, options)
@@ -118,7 +118,7 @@ const loginUser = async (req, res) => {
     }
 }
 
-const matchrefreshtoken = async (req,res) =>{
+const matchrefreshtoken = async (req, res) => {
     /**
      * first collect the token from cookies.
      * decode the token ->if not same ->logout user
@@ -128,34 +128,33 @@ const matchrefreshtoken = async (req,res) =>{
 
     try {
         const incomingrefreshtoken = req.cookies.refreshtoken || req.body.refreshtoken;
-    
-        const decodedToken = await jwt.verify(incomingrefreshtoken,process.env.REFRESH_TOKEN_SECRET)
-    
         
-        if(!incomingrefreshtoken){
-            throw new Apierror(401,"unauthorized");
+        if (!incomingrefreshtoken) {
+            throw new Apierror(401, "unauthorized");
         }
+
+        const decodedToken = await jwt.verify(incomingrefreshtoken, process.env.REFRESH_TOKEN_SECRET)
+
+
         const user = await User.findById(decodedToken?.id)
-    
-        if(incomingrefreshtoken !== user.refreshToken){
-            throw new Apierror(401,"Invalid refresh token");
+
+        if (incomingrefreshtoken !== user.refreshToken) {
+            throw new Apierror(401, "Invalid refresh token");
         }
-    
-        const {refreshtoken: newrefreshtoken,accesstoken}=await generateAccessTokenAndRefreshToken(user?._id);
-        
-        user.refreshToken = newrefreshtoken;
-        await user.save({validateBeforeSave:false})
-    
-        res.cookie("accesstoken",accesstoken,options)
-           .cookie("refreshtoken",newrefreshtoken,options);
-    
+
+        const { refreshtoken: newrefreshtoken, accesstoken } = await generateAccessTokenAndRefreshToken(user?._id);
+
+        res.cookie("accesstoken", accesstoken, options)
+            .cookie("refreshtoken", newrefreshtoken, options);
+
         return res.status(200).json({
+            message:"Access token refreshed",
             accesstoken,
         })
     } catch (error) {
-       res.status(error.statuscode || 500).json({
-        message:error.message || "internal server error"
-       })
+        res.status(error.statuscode || 500).json({
+            message: error.message || "internal server error"
+        })
     }
 }
 
@@ -166,67 +165,185 @@ const logoutUser = async (req, res) => {
         if (!userid) {
             throw new Apierror(403, "unauthorized user");
         }
-        
+
         const user = await User.findByIdAndUpdate(userid,
             {
-                $unset:{refreshToken:true}
+                $unset: { refreshToken: true }
             },
-            {new:true},
+            { new: true },
         )
-        await user.save({validateBeforeSave:false});
+        await user.save({ validateBeforeSave: false });
 
-        res.clearCookie("accesstoken",options)
-            .clearCookie("refreshtoken",options);
-    
-            
-        return res.status(200).json({message: "logout successfully"});
+        res.clearCookie("accesstoken", options)
+            .clearCookie("refreshtoken", options);
+
+
+        return res.status(200).json({ message: "logout successfully" });
     } catch (error) {
         res.status(error.statuscode || 500).json({
-            message:error.message || "internal server error"
+            message: error.message || "internal server error"
         })
     }
 }
 
-const uploadfile = async (req, res) =>{
+const uploadfile = async (req, res) => {
     try {
         const userid = req.user?.id;
-    
+
         const avatarLocalpath = req.file?.path || req.files?.avatar?.[0]?.path;
-    
-        if(!avatarLocalpath){
-            throw new Apierror(400,"avatar is required");
+
+        if (!avatarLocalpath) {
+            throw new Apierror(400, "avatar is required");
         }
-    
+
         const avatar = await uploadImage(avatarLocalpath);
-    
-        const avatarurl = avatar?.secure_url ||avatar?.url ||avatar;
-    
-        const coverimagepath= req.file?.path || req.files?.coverimage?.[0]?.path;
-    
-        if(!coverimagepath){
-            throw new Apierror(400,"coverimage path is required");
+        const avatarurl = avatar?.secure_url || avatar?.url || avatar;
+        const avatarid = avatar?.public_id
+
+
+        const coverimagepath = req.file?.path || req.files?.coverimage?.[0]?.path;
+
+        if (!coverimagepath) {
+            throw new Apierror(400, "coverimage path is required");
         }
-    
+
         const coverimage = await uploadImage(coverimagepath);
-    
-        const coverimageurl = coverimage?.secure_url || coverimage?.url ||coverimage;
-    
+        const coverimageurl = coverimage?.secure_url || coverimage?.url || coverimage;
+        const coverimageid = coverimage?.public_id
         const updateduser = await User.findByIdAndUpdate(userid,
             {
-                avatar:avatarurl,
-                coverimage:coverimageurl
+                avatar:{
+                    url:avatarurl,
+                    avatarpublic_id:avatarid
+                },
+                coverimage:{
+                    url:coverimageurl,
+                    coverpublic_id:coverimageid
+                }
             },
-            {new:true,runValidators:true}
+            { new: true, runValidators: true }
         )
-    
+
         const user = await User.findById(userid).select("-password -refreshToken")
-    
+
         return res.status(200).json({
-            message:"files are uploaded successfully",
+            message: "files are uploaded successfully",
             user,
         })
     } catch (error) {
-        throw new Apierror(500,"internal server in file uploading");
+        throw new Apierror(500, "internal server in file uploading");
+    }
+}
+
+const changeCurrentPassword = async (req, res) => {
+    try {
+        const { oldpassword, newpassword } = req.body;
+        
+        if(oldpassword === newpassword){
+            throw new Apierror(400,"olpassword and newpassword can not be same");
+        }
+
+        const user = await User.findById(req.user?.id);
+        const verifypassword = await user.isPasswordCorrect(oldpassword);
+    
+        if(!verifypassword){
+            throw new Apierror(400,"wrong password entered");
+        }
+        
+        user.password = newpassword;
+        await user.save({validateBeforeSave:false});
+    
+        return res.status(200).json({message:"password changed successfully"});
+    } catch (error) {
+        res.status(error.statuscode || 500).json({
+            message: error.message || "internal server error"
+        })
+    }
+}
+
+const getUserDetails = async (req, res) => {
+    try {
+        const user = await User.findById(req.user?.id).select("-password -refreshToken");
+
+        return res.status(200).json({ user });
+    } catch (error) {
+        res.status(error.statuscode || 500).json({
+            message: error.message || "internal server error"
+        })
+    }
+}
+
+const updateavatar = async (req, res) => {
+    try{
+        const userid= req.user?.id;
+        const user = await User.findById(userid);
+
+        if(!user){
+            throw new Apierror(404,"user not found")
+        }
+        
+        const avatarLocalpath = req.file?.path || req.files?.avatar?.[0]?.path;
+        
+        if (!avatarLocalpath) {
+            throw new Apierror(400, "avatar is required");
+        }
+
+        /*if(user.avatar?.avatarpublic_id){
+            await cloudinary.uploader.destroy(
+                user.avatar.avatarpublic_id
+            )
+        }*/
+
+        await destroyImage(user.avatar?.avatarpublic_id);
+        const avatar = await uploadImage(avatarLocalpath);
+
+        const avatarurl = avatar?.secure_url || avatar?.url || avatar;
+
+        user.avatar = {
+            url: avatarurl,
+            avatarpublic_id: avatar?.public_id
+        };
+        await user.save({ validateBeforeSave: false });
+
+        return res.status(200).json({message:"avatar changed successfully"});
+    } catch(error){
+        res.status(error.statuscode || 500).json({
+            message: error.message || "internal server error"
+        })
+    }
+}
+
+const updateCoverimage = async(req,res) =>{
+    try {
+        const userid = req.user?.id;
+        const user = await User.findById(userid);
+
+        if(!user){
+            throw new Apierror(404,"user not found");
+        }
+
+        const coverimageLocalpath = req.file?.path || req.files?.coverimage?.[0]?.path;
+
+        if(!coverimageLocalpath){
+            throw new Apierror(402,"coverimage is required");
+        }
+        await destroyImage(user.coverimage?.coverpublic_id);
+        const coverimage = await uploadImage(coverimageLocalpath);
+
+        const coverimageurl = coverimage?.secure_url||coverimage?.url ||coverimage;
+
+        user.coverimage = {
+            url: coverimageurl,
+            coverpublic_id: coverimage?.public_id
+        };
+        await user.save({ validateBeforeSave: false });
+
+        return res.status(200).json({message:"coverimage changed successfully"});
+
+    } catch (error) {
+        res.status(error.statuscode||500).json({
+            message:error.message||"Internal server error",
+        })
     }
 }
 
@@ -236,5 +353,9 @@ export {
     loginUser,
     logoutUser,
     uploadfile,
-    matchrefreshtoken
+    changeCurrentPassword,
+    matchrefreshtoken,
+    updateavatar,
+    getUserDetails,
+    updateCoverimage,
 };
