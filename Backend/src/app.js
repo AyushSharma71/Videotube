@@ -9,11 +9,11 @@ app.use(cookieParser());
 app.use(cors());
 
 
-import userRouter from "./routers/router.routes.js";
-
-
+import userRouter from "./routers/user.routers.js";
 // http://localhost:5000/api/v1/user/register
 app.use("/api/v1/user", userRouter);
-
+import videoRouter from "./routers/video.routers.js";
+// http://localhost:5000/api/v1/user/publish-video
+app.use("/api/v1/video",videoRouter);
 
 export { app };

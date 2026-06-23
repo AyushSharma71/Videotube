@@ -1,12 +1,23 @@
 import mongoose from "mongoose";
 
 const videoSchema = new mongoose.Schema({
-    videoSchema:{
-        type:String,
-        required:true,
+    videoFile:{
+        url:{
+            type:String,
+            required:true,
+        },
+        videoPublicId:{
+            type:String,
+            required:true,
+        }
     },
     thumbnail:{
-        type:String,
+        url:{
+            type:String,
+        },
+        thumbnailPublicId:{
+            type:String,
+        }
     },
     owner:{
         type:mongoose.Schema.Types.ObjectId,

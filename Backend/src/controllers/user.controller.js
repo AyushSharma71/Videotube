@@ -1,10 +1,8 @@
 import { Apierror } from "../utils/Apierror.js";
 import User from "../models/user.models.js";
-import bcrypt from "bcrypt";
 import cookieparser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import { uploadImage,destroyImage } from "../utils/cloudinary.js";
-import {v2 as cloudinary} from "cloudinary";
 const options = {
     httpOnly: true,
     secure: true,
