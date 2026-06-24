@@ -345,7 +345,7 @@ const updateCoverimage = async(req,res) =>{
     }
 }
 
-
+// todo :- watchhistory,channel
 export {
     registerUser,
     loginUser,
