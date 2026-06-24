@@ -345,6 +345,36 @@ const updateCoverimage = async(req,res) =>{
     }
 }
 
+const updatedetails = async(req,res) =>{
+    try {
+        const userId = req.user.id;
+        const {fullname,username,email} = req.body ;
+    
+        if(!(fullname || username || email)){
+            throw new Apierror(400,"At least one field (fullname, username, or email) is required")
+        }
+    
+        const updateduser = await User.findByIdAndUpdate(userId,
+            {
+                fullname:fullname,
+                email:email,
+                username:username,
+            },
+            {new :true,runValidators:true}
+        )
+        if(!updateduser){
+            throw new Apierror(400,"user is not updated");
+        }
+        return res.status(200).json({
+            message:"updated successfully"
+        })
+    } catch (error) {
+        res.status(error.statuscode||500).json({
+            message:error.message||"internal server error"
+        })
+    }
+}
+
 // todo :- watchhistory,channel
 export {
     registerUser,
@@ -356,4 +386,5 @@ export {
     updateavatar,
     getUserDetails,
     updateCoverimage,
+    updatedetails
 };

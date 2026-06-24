@@ -3,7 +3,8 @@ import { validateUser } from "../middlewares/validation.middleware.js";
 import {
     loginUser, logoutUser, matchrefreshtoken, registerUser,
     uploadfile, changeCurrentPassword, getUserDetails,
-    updateavatar,updateCoverimage
+    updateavatar,updateCoverimage,
+    updatedetails
 } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -26,7 +27,7 @@ router.route("/change-password").put(authMiddleware, changeCurrentPassword);
 router.route("/member").get(authMiddleware, getUserDetails);
 router.route("/update-avatar").put(upload.single("avatar"), authMiddleware, updateavatar);
 router.route("/update-coverimage").put(upload.single("coverimage"),authMiddleware,updateCoverimage)
-
+router.route("/update-details").put(authMiddleware,updatedetails);
 
 
 
