@@ -292,8 +292,8 @@ const updateavatar = async (req, res) => {
             )
         }*/
 
-        await destroyImage(user.avatar?.avatarpublic_id);
-        const avatar = await uploadImage(avatarLocalpath);
+       const avatar = await uploadImage(avatarLocalpath);
+       await destroyImage(user.avatar?.avatarpublic_id);
 
         const avatarurl = avatar?.secure_url || avatar?.url || avatar;
 
@@ -325,8 +325,8 @@ const updateCoverimage = async(req,res) =>{
         if(!coverimageLocalpath){
             throw new Apierror(402,"coverimage is required");
         }
-        await destroyImage(user.coverimage?.coverpublic_id);
         const coverimage = await uploadImage(coverimageLocalpath);
+        await destroyImage(user.coverimage?.coverpublic_id);
 
         const coverimageurl = coverimage?.secure_url||coverimage?.url ||coverimage;
 
