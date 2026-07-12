@@ -2,7 +2,8 @@ import { Apierror } from "../utils/Apierror.js";
 import User from "../models/user.models.js";
 import cookieparser from "cookie-parser";
 import jwt from "jsonwebtoken";
-import { uploadImage,destroyImage } from "../utils/cloudinary.js";
+import { uploadImage, destroyImage } from "../utils/cloudinary.js";
+import mongoose from "mongoose";
 const options = {
     httpOnly: true,
     secure: true,
@@ -126,7 +127,7 @@ const matchrefreshtoken = async (req, res) => {
 
     try {
         const incomingrefreshtoken = req.cookies.refreshtoken || req.body.refreshtoken;
-        
+
         if (!incomingrefreshtoken) {
             throw new Apierror(401, "unauthorized");
         }
@@ -146,7 +147,7 @@ const matchrefreshtoken = async (req, res) => {
             .cookie("refreshtoken", newrefreshtoken, options);
 
         return res.status(200).json({
-            message:"Access token refreshed",
+            message: "Access token refreshed",
             accesstoken,
         })
     } catch (error) {
@@ -210,13 +211,13 @@ const uploadfile = async (req, res) => {
         const coverimageid = coverimage?.public_id
         const updateduser = await User.findByIdAndUpdate(userid,
             {
-                avatar:{
-                    url:avatarurl,
-                    avatarpublic_id:avatarid
+                avatar: {
+                    url: avatarurl,
+                    avatarpublic_id: avatarid
                 },
-                coverimage:{
-                    url:coverimageurl,
-                    coverpublic_id:coverimageid
+                coverimage: {
+                    url: coverimageurl,
+                    coverpublic_id: coverimageid
                 }
             },
             { new: true, runValidators: true }
@@ -236,22 +237,22 @@ const uploadfile = async (req, res) => {
 const changeCurrentPassword = async (req, res) => {
     try {
         const { oldpassword, newpassword } = req.body;
-        
-        if(oldpassword === newpassword){
-            throw new Apierror(400,"olpassword and newpassword can not be same");
+
+        if (oldpassword === newpassword) {
+            throw new Apierror(400, "olpassword and newpassword can not be same");
         }
 
         const user = await User.findById(req.user?.id);
         const verifypassword = await user.isPasswordCorrect(oldpassword);
-    
-        if(!verifypassword){
-            throw new Apierror(400,"wrong password entered");
+
+        if (!verifypassword) {
+            throw new Apierror(400, "wrong password entered");
         }
-        
+
         user.password = newpassword;
-        await user.save({validateBeforeSave:false});
-    
-        return res.status(200).json({message:"password changed successfully"});
+        await user.save({ validateBeforeSave: false });
+
+        return res.status(200).json({ message: "password changed successfully" });
     } catch (error) {
         res.status(error.statuscode || 500).json({
             message: error.message || "internal server error"
@@ -272,16 +273,16 @@ const getUserDetails = async (req, res) => {
 }
 
 const updateavatar = async (req, res) => {
-    try{
-        const userid= req.user?.id;
+    try {
+        const userid = req.user?.id;
         const user = await User.findById(userid);
 
-        if(!user){
-            throw new Apierror(404,"user not found")
+        if (!user) {
+            throw new Apierror(404, "user not found")
         }
-        
+
         const avatarLocalpath = req.file?.path || req.files?.avatar?.[0]?.path;
-        
+
         if (!avatarLocalpath) {
             throw new Apierror(400, "avatar is required");
         }
@@ -292,8 +293,8 @@ const updateavatar = async (req, res) => {
             )
         }*/
 
-       const avatar = await uploadImage(avatarLocalpath);
-       await destroyImage(user.avatar?.avatarpublic_id);
+        const avatar = await uploadImage(avatarLocalpath);
+        await destroyImage(user.avatar?.avatarpublic_id);
 
         const avatarurl = avatar?.secure_url || avatar?.url || avatar;
 
@@ -303,32 +304,32 @@ const updateavatar = async (req, res) => {
         };
         await user.save({ validateBeforeSave: false });
 
-        return res.status(200).json({message:"avatar changed successfully"});
-    } catch(error){
+        return res.status(200).json({ message: "avatar changed successfully" });
+    } catch (error) {
         res.status(error.statuscode || 500).json({
             message: error.message || "internal server error"
         })
     }
 }
 
-const updateCoverimage = async(req,res) =>{
+const updateCoverimage = async (req, res) => {
     try {
         const userid = req.user?.id;
         const user = await User.findById(userid);
 
-        if(!user){
-            throw new Apierror(404,"user not found");
+        if (!user) {
+            throw new Apierror(404, "user not found");
         }
 
         const coverimageLocalpath = req.file?.path || req.files?.coverimage?.[0]?.path;
 
-        if(!coverimageLocalpath){
-            throw new Apierror(402,"coverimage is required");
+        if (!coverimageLocalpath) {
+            throw new Apierror(402, "coverimage is required");
         }
         const coverimage = await uploadImage(coverimageLocalpath);
         await destroyImage(user.coverimage?.coverpublic_id);
 
-        const coverimageurl = coverimage?.secure_url||coverimage?.url ||coverimage;
+        const coverimageurl = coverimage?.secure_url || coverimage?.url || coverimage;
 
         user.coverimage = {
             url: coverimageurl,
@@ -336,46 +337,168 @@ const updateCoverimage = async(req,res) =>{
         };
         await user.save({ validateBeforeSave: false });
 
-        return res.status(200).json({message:"coverimage changed successfully"});
+        return res.status(200).json({ message: "coverimage changed successfully" });
 
     } catch (error) {
-        res.status(error.statuscode||500).json({
-            message:error.message||"Internal server error",
+        res.status(error.statuscode || 500).json({
+            message: error.message || "Internal server error",
         })
     }
 }
 
-const updatedetails = async(req,res) =>{
+const updatedetails = async (req, res) => {
     try {
         const userId = req.user.id;
-        const {fullname,username,email} = req.body ;
-    
-        if(!(fullname || username || email)){
-            throw new Apierror(400,"At least one field (fullname, username, or email) is required")
+        const { fullname, username, email } = req.body;
+
+        if (!(fullname || username || email)) {
+            throw new Apierror(400, "At least one field (fullname, username, or email) is required")
         }
-    
+
         const updateduser = await User.findByIdAndUpdate(userId,
             {
-                fullname:fullname,
-                email:email,
-                username:username,
+                fullname: fullname,
+                email: email,
+                username: username,
             },
-            {new :true,runValidators:true}
+            { new: true, runValidators: true }
         )
-        if(!updateduser){
-            throw new Apierror(400,"user is not updated");
+        if (!updateduser) {
+            throw new Apierror(400, "user is not updated");
         }
         return res.status(200).json({
-            message:"updated successfully"
+            message: "updated successfully"
         })
     } catch (error) {
-        res.status(error.statuscode||500).json({
-            message:error.message||"internal server error"
+        res.status(error.statuscode || 500).json({
+            message: error.message || "internal server error"
         })
     }
 }
 
-// todo :- watchhistory,channel
+const getUserChannelProfile = async (req, res) => {
+    try {
+        const { username } = req.params;
+
+        if (!username?.trim()) {
+            throw new Apierror(404, "username is not found")
+        }
+
+        const channel = await User.aggregate([
+            // for getting subscribers 
+            {
+                $match: {
+                    username: username?.toLowerCase()
+                }
+            },
+            {
+                $lookup: {
+                    from: "subscriptions",
+                    localField: "_id",
+                    foreignField: "channel",
+                    as: "subscribers"
+                }
+            },
+            // for getting subscribed other channels
+            {
+                $lookup: {
+                    from: "subscriptions",
+                    localField: "_id",
+                    foreignField: "subscriber",
+                    as: "subscribedto"
+                }
+            },
+            {
+                $addFields: {
+                    subscribersCount: {
+                        $size: "$subscribers"
+                    },
+                    channelSubscribedto: {
+                        $size: "$subscribedto"
+                    },
+                    isSubscribed: {
+                        $cond: {
+                            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+                            then: true,
+                            else: false,
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    username: 1,
+                    fullname: 1,
+                    subscribersCount: 1,
+                    channelSubscribedto: 1,
+                    isSubscribed: 1,
+                    avatar: 1,
+                    coverimage: 1
+                }
+            }
+        ])
+
+        if (!channel?.length) {
+            throw new Apierror(404, "channel does not exists")
+        }
+
+        return res.status(200).json({
+            message: "channel profile fetched successfully",
+            channel: channel[0]
+        })
+    } catch (error) {
+        res.status(error.statuscode || 500).json({
+            message: error.message || "internal server error"
+        })
+    }
+}
+
+const watchHistory = async (req, res) => {
+    try {
+        const user = await User.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(req.user?.id)
+                }
+            },
+            {
+                $lookup: {
+                    from: "videos",
+                    localField: "watchHistory",
+                    foreignField: "_id",
+                    as: "watchHistory",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "owner",
+                                foreignField: "_id",
+                                as: "owner"
+                            }
+                        },
+                        {
+                            $addFields:{
+                                owner:{
+                                    $first:"$owner"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+        ])
+
+        return res.status(200).json({
+            message:"Watch history fetched successfully",
+            watchHistory:user[0].watchHistory,
+        })
+    } catch (error) {
+        res.status(error.statuscode || 500).json({
+            message: error.message || "internal server error"
+        })
+    }
+}
+
 export {
     registerUser,
     loginUser,
@@ -386,5 +509,7 @@ export {
     updateavatar,
     getUserDetails,
     updateCoverimage,
-    updatedetails
+    updatedetails,
+    getUserChannelProfile,
+    watchHistory
 };

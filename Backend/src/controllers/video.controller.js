@@ -44,6 +44,7 @@ const publishAVideo = async (req, res) => {
                 thumbnailPublicId: thumbnailPublic_id,
             },
             owner: userid,
+            isPublished: true
         })
 
         if (!publishedvideo) {
