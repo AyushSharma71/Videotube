@@ -165,29 +165,17 @@ const getvideobyId = async (req,res) =>{
 
         videos.views += 1,
         await videos.save({validateBeforeSave:false})
+        
         if(!req.user){
             throw new Apierror(401,"unauthorized");
         }
-
-        const user = await User.findById(req.user.id);
-
-        if(!user){
-            throw new Apierror(404,"user not found");
-        }
-
-        const filteredHistory = (user.watchHistory || [])
-            .map((historyItem) => historyItem.toString())
-            .filter((historyItem) => historyItem !== videos._id.toString());
-
-        const updatedHistory = [videos._id, ...filteredHistory].slice(0, 50);
-
-        await User.findByIdAndUpdate(req.user?.id, {
-            watchHistory: updatedHistory,
-        }, {
-            new: true,
-            runValidators: true
-        })
-
+        await User.findByIdAndUpdate(req.user.id,
+            {
+                $addToSet:{
+                    watchHistory:videos._id
+                }
+            }
+        )
         return res.status(200).json({
             videos
         })
@@ -217,6 +205,7 @@ const getallvideo = async (req,res) =>{
         })
     }
 }
+
 
 
 export {
