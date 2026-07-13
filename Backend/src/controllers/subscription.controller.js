@@ -10,3 +10,7 @@ const subscribers = async(req,res) =>{
         })
     }
 }
+
+export {
+    subscribers
+}

@@ -149,10 +149,10 @@ const updateVideo = async(req,res)=>{
     }
 }
 
-const getvidoebyId = async (req,res) =>{
+const getvideobyId = async (req,res) =>{
     try {
         const videoid = req.params.id;
-    
+        
         if(!videoid){
             throw new Apierror(404,"videoid is not found");
         }
@@ -162,6 +162,32 @@ const getvidoebyId = async (req,res) =>{
         if(!videos){
             throw new Apierror(404,"video is not found");
         }
+
+        videos.views += 1,
+        await videos.save({validateBeforeSave:false})
+        if(!req.user){
+            throw new Apierror(401,"unauthorized");
+        }
+
+        const user = await User.findById(req.user.id);
+
+        if(!user){
+            throw new Apierror(404,"user not found");
+        }
+
+        const filteredHistory = (user.watchHistory || [])
+            .map((historyItem) => historyItem.toString())
+            .filter((historyItem) => historyItem !== videos._id.toString());
+
+        const updatedHistory = [videos._id, ...filteredHistory].slice(0, 50);
+
+        await User.findByIdAndUpdate(req.user?.id, {
+            watchHistory: updatedHistory,
+        }, {
+            new: true,
+            runValidators: true
+        })
+
         return res.status(200).json({
             videos
         })
@@ -172,11 +198,31 @@ const getvidoebyId = async (req,res) =>{
     }
 }
 
+const getallvideo = async (req,res) =>{
+    try {
+        const userid = req.user?.id;
+    
+        if(!userid){
+            throw new Apierror(401,"unauthorized")
+        }
+    
+        const allvideo = await video.find({ isPublished: true }).sort({createdAt:-1});
+    
+        return res.status(200).json({
+            allvideo
+        })
+    } catch (error) {
+        res.status(error.statuscode||500).json({
+            message:error.message||"Internal server error"
+        })
+    }
+}
 
-// todo :- getallvideo,togglevideo
+
 export {
     publishAVideo,
     deleteVideo,
     updateVideo,
-    getvidoebyId
+    getvideobyId,
+    getallvideo,
 };

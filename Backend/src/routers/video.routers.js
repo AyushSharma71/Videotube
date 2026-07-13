@@ -1,7 +1,7 @@
 import Router from "express";
 import { 
-    deleteVideo, getvidoebyId, publishAVideo,
-    updateVideo
+    deleteVideo, getvideobyId, publishAVideo,
+    updateVideo, getallvideo
 } from "../controllers/video.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
@@ -19,7 +19,9 @@ router.route("/update-video/:id").put(upload.fields([
     { name: "videoFile", maxCount: 1 },
     { name: "thumbnail", maxCount: 1 }
 ]),updateVideo);
-router.route("/:id").get(getvidoebyId);
+router.route("/allvideo").get(authMiddleware, getallvideo);
+router.route("/:id").get(authMiddleware,getvideobyId);
+
 
 
 export default router;

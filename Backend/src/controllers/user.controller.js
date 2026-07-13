@@ -455,42 +455,92 @@ const getUserChannelProfile = async (req, res) => {
 
 const watchHistory = async (req, res) => {
     try {
+        if (!req.user?.id) {
+            throw new Apierror(401, "unauthorized")
+        }
+
         const user = await User.aggregate([
             {
                 $match: {
-                    _id: new mongoose.Types.ObjectId(req.user?.id)
+                    _id: new mongoose.Types.ObjectId(req.user.id)
                 }
             },
             {
                 $lookup: {
                     from: "videos",
-                    localField: "watchHistory",
-                    foreignField: "_id",
-                    as: "watchHistory",
+                    let: { historyIds: "$watchHistory" },
                     pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $in: ["$_id", "$$historyIds"]
+                                }
+                            }
+                        },
                         {
                             $lookup: {
                                 from: "users",
                                 localField: "owner",
                                 foreignField: "_id",
-                                as: "owner"
+                                as: "ownerDetails",
+                                pipeline: [
+                                    {
+                                        $project: {
+                                            _id: 1,
+                                            username: 1,
+                                            fullname: 1,
+                                            avatar: 1
+                                        }
+                                    }
+                                ]
                             }
                         },
                         {
-                            $addFields:{
-                                owner:{
-                                    $first:"$owner"
+                            $addFields: {
+                                owner: {
+                                    $first: "$ownerDetails"
                                 }
                             }
+                        },
+                        {
+                            $addFields: {
+                                historyIndex: {
+                                    $indexOfArray: ["$$historyIds", "$_id"]
+                                }
+                            }
+                        },
+                        {
+                            $sort: {
+                                historyIndex: 1
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 1,
+                                title: 1,
+                                description: 1,
+                                thumbnail: 1,
+                                videoFile: 1,
+                                views: 1,
+                                duration: 1,
+                                owner: 1,
+                            }
                         }
-                    ]
+                    ],
+                    as: "watchHistory"
                 }
             },
+            {
+                $project: {
+                    _id: 0,
+                    watchHistory: 1
+                }
+            }
         ])
 
         return res.status(200).json({
-            message:"Watch history fetched successfully",
-            watchHistory:user[0].watchHistory,
+            message: "Watch history fetched successfully",
+            watchHistory: user[0]?.watchHistory || [],
         })
     } catch (error) {
         res.status(error.statuscode || 500).json({
