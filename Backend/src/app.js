@@ -12,8 +12,16 @@ app.use(cors());
 import userRouter from "./routers/user.routers.js";
 // http://localhost:5000/api/v1/user/register
 app.use("/api/v1/user", userRouter);
+
 import videoRouter from "./routers/video.routers.js";
-// http://localhost:5000/api/v1/user/publish-video
+// http://localhost:5000/api/v1/video/publish-video
 app.use("/api/v1/video",videoRouter);
+
+import subscriptionRouter from "./routers/subscription.routers.js"
+// http://localhost:5000/api/v1/subscription/subscribe
+app.use("/api/v1/subscription",subscriptionRouter);
+
+
+
 
 export { app };

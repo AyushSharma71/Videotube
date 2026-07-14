@@ -44,7 +44,8 @@ const publishAVideo = async (req, res) => {
                 thumbnailPublicId: thumbnailPublic_id,
             },
             owner: userid,
-            isPublished: true
+            isPublished: true,
+            duration: videoFile?.duration
         })
 
         if (!publishedvideo) {
@@ -165,7 +166,7 @@ const getvideobyId = async (req,res) =>{
 
         videos.views += 1,
         await videos.save({validateBeforeSave:false})
-        
+
         if(!req.user){
             throw new Apierror(401,"unauthorized");
         }
