@@ -20,7 +20,9 @@ app.use("/api/v1/video",videoRouter);
 import subscriptionRouter from "./routers/subscription.routers.js"
 // http://localhost:5000/api/v1/subscription/subscribe
 app.use("/api/v1/subscription",subscriptionRouter);
-
+import commentRouter from "./routers/comment.routers.js"
+// http://localhost:5000/api/v1/comment/getcomments
+app.use("/api/v1/comment",commentRouter)
 
 
 
