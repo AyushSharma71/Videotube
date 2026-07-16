@@ -7,55 +7,83 @@ const getVideoComments = async (req, res) => {
     try {
         const { videoId } = req.params;
         
-        const comments = await comment.aggregate([
+        const agg = await comment.aggregate([
             {
-                $match:{
-                    video: new mongoose.Types.ObjectId(videoId)
+                $match: { video: new mongoose.Types.ObjectId(videoId) }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "commenter"
                 }
             },
             {
-                $lookup:{
-                    from:"users",
-                    localField:"owner",
-                    foreignField:"_id",
-                    as:"commenter"
+                $unwind: { path: "$commenter", preserveNullAndEmptyArrays: true }
+            },
+            {
+                $lookup: {
+                    from: "videos",
+                    localField: "video",
+                    foreignField: "_id",
+                    as: "videodetails"
                 }
             },
             {
-                $unwind:"$commenter"
+                $unwind: { path: "$videodetails", preserveNullAndEmptyArrays: true }
             },
             {
-                $lookup:{
-                    from:"videos",
-                    localField:"video",
-                    foreignField:"_id",
-                    as:"videodetails"
-                }
-            },
-            {
-                $unwind:"$videodetails"
-            },
-            {
-                $project:{
-                    content:1,
-                    commenter:{
-                        username:"$commenter.username",
-                        avatar:"$commenter.avatar"
+                $project: {
+                    content: 1,
+                    createdAt: 1,
+                    commenter: {
+                        username: "$commenter.username",
+                        avatar: "$commenter.avatar"
                     },
-                    videoDetails:{
-                        videoFile:"$videodetails.videoFile",
-                        title:"$videodetails.title",
-                        description:"$videodetails.description",
+                    videoDetails: {
+                        videoFile: "$videodetails.videoFile",
+                        title: "$videodetails.title",
+                        description: "$videodetails.description"
+                    }
+                }
+            },
+            { $sort: { createdAt: -1 } },
+            {
+                $group: {
+                    _id: "$video",
+                    videoDetails: { $first: "$videoDetails" },
+                    comments: {
+                        $push: {
+                            content: "$content",
+                            commenter: "$commenter",
+                            createdAt: "$createdAt"
+                        }
                     }
                 }
             },
             {
-                $sort:{
-                    createdAt:-1
+                $project: {
+                    _id: 0,
+                    videoDetails: 1,
+                    comments: 1
                 }
             }
-        ])
-        const result= comments[0];
+        ]);
+
+        if (!agg || agg.length === 0) {
+            // no comments, still try to return video details
+            const videoDoc = await video.findById(videoId).select("videoFile title description");
+            return res.status(200).json({
+                message: "video comments fetched successfully",
+                result: {
+                    videoDetails: videoDoc,
+                    comments: []
+                }
+            })
+        }
+
+        const result = agg[0];
         return res.status(200).json({
             message: "video comments fetched successfully",
             result
@@ -78,10 +106,11 @@ const addComment = async (req, res) => {
         if (!userid) {
             throw new Apierror(401, "unauthorized")
         }
+        const { content } = req.body;
+
         if (!content) {
             throw new Apierror(404, "content is required")
         }
-        const { content } = req.body;
 
         const usercomment = await comment.create({
             content: content,
