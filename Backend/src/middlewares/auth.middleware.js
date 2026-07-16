@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 import { Apierror } from "../utils/Apierror.js";
-import User from "../models/user.models.js";
 
 const authMiddleware = async (req,res,next) => {
     try {

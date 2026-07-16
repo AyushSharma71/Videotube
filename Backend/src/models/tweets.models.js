@@ -8,6 +8,14 @@ const tweetSchema = new mongoose.Schema({
     content:{
         type:String,
         required:true
+    },
+    picture:{
+        url:{
+            type:String,
+        },
+        picturePublicId:{
+            type:String,
+        }
     }
 },{timestamps:true})
 

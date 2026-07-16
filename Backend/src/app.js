@@ -23,7 +23,9 @@ app.use("/api/v1/subscription",subscriptionRouter);
 import commentRouter from "./routers/comment.routers.js"
 // http://localhost:5000/api/v1/comment/getcomments
 app.use("/api/v1/comment",commentRouter)
-
+import tweetRouter from "./routers/tweet.routers.js"
+// http://localhost:5000/api/v1/tweets/createtweet
+app.use("/api/v1/tweets",tweetRouter)
 
 
 export { app };
