@@ -20,12 +20,21 @@ app.use("/api/v1/video",videoRouter);
 import subscriptionRouter from "./routers/subscription.routers.js"
 // http://localhost:5000/api/v1/subscription/subscribe
 app.use("/api/v1/subscription",subscriptionRouter);
+
 import commentRouter from "./routers/comment.routers.js"
 // http://localhost:5000/api/v1/comment/getcomments
 app.use("/api/v1/comment",commentRouter)
+
 import tweetRouter from "./routers/tweet.routers.js"
 // http://localhost:5000/api/v1/tweets/createtweet
 app.use("/api/v1/tweets",tweetRouter)
 
+import healthcheckRouter from "./routers/healthcheck.routers.js"
+// http://localhost:5000/api/v1/health/check-health
+app.use("/api/v1/health",healthcheckRouter)
+
+import likeRouter from "./routers/like.routers.js"
+// http://localhost:5000/api/v1/like/video-like/:videoId
+app.use("/api/v1/like",likeRouter)
 
 export { app };
