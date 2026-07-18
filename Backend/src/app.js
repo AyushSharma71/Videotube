@@ -37,4 +37,13 @@ import likeRouter from "./routers/like.routers.js"
 // http://localhost:5000/api/v1/like/video-like/:videoId
 app.use("/api/v1/like",likeRouter)
 
+import playlistRouter from "./routers/playlist.routers.js"
+// http://localhost:5000/api/v1/playlist/create-playlist
+app.use("/api/v1/playlist",playlistRouter)
+
+import dashboardRouter from "./routers/dashboard.routers.js"
+// http://localhost:5000/api/v1/dashboard/get-dashboard
+app.use("/api/v1/dashboard",dashboardRouter)
+
+
 export { app };

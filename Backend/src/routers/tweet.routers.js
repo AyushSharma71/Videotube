@@ -13,8 +13,8 @@ const router = Router();
 
 
 router.route("/createtweet").post(authMiddleware,upload.single("picture"),createTweet);
-router.route("/updatetweet/:tweetId").post(authMiddleware,updateTweet);
-router.route("/deletetweet/:tweetId").post(authMiddleware,deleteTweet);
+router.route("/updatetweet/:tweetId").put(authMiddleware,updateTweet);
+router.route("/deletetweet/:tweetId").delete(authMiddleware,deleteTweet);
 router.route("/gettweet/:userid").get(authMiddleware,getUserTweets)
 
 export default router;

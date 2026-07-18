@@ -14,11 +14,11 @@ router.route("/publish-video").post(upload.fields([
     { name: "videoFile", maxCount: 1 },
     { name: "thumbnail", maxCount: 1 }
 ]), authMiddleware, publishAVideo);
-router.route("/delete-video/:id").post(deleteVideo);
+router.route("/delete-video/:id").delete(authMiddleware, deleteVideo);
 router.route("/update-video/:id").put(upload.fields([
     { name: "videoFile", maxCount: 1 },
     { name: "thumbnail", maxCount: 1 }
-]),updateVideo);
+]), authMiddleware, updateVideo);
 router.route("/allvideo").get(authMiddleware, getallvideo);
 router.route("/:id").get(authMiddleware,getvideobyId);
 
